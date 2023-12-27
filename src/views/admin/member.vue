@@ -46,6 +46,7 @@
         <th>昵称</th>
         <th>头像url</th>
         <th>注册时间</th>
+        <th>操作</th>
       </tr>
       </thead>
 
@@ -57,9 +58,36 @@
         <td>{{member.name}}</td>
         <td>{{member.photo}}</td>
         <td>{{member.registerTime}}</td>
+        <td>
+          <div class="hidden-sm hidden-xs btn-group">
+            <button v-on:click="toCheckDevice(member)" class="btn btn-white btn-xs btn-info btn-round">
+              查看设备
+            </button>&nbsp;
+          </div>
+        </td>
       </tr>
       </tbody>
     </table>
+    <el-dialog
+      title="登录设备信息"
+      :visible.sync="deviceDialogVisible"
+      width="45%">
+      <el-table :data="deviceContent" style="width: 100%">
+        <el-table-column prop="id" label="ID"></el-table-column>
+        <el-table-column prop="memberId" label="会员ID"></el-table-column>
+        <el-table-column prop="deviceId" label="设备ID" width="300"></el-table-column>
+        <el-table-column prop="loginTime" label="首次登陆时间" width="160"></el-table-column>
+        <el-table-column label="操作" width="100">
+          <template slot-scope="scope">
+            <el-button @click="handleDelete(scope.row)" type="text" size="small">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="deviceDialogVisible = false;">取 消</el-button>
+        <el-button type="primary" @click="deviceDialogVisible = false;">保 存</el-button>
+      </span>
+    </el-dialog>
 
   </div>
 </template>
@@ -84,7 +112,9 @@
           name: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
           mobile: [{ required: false, message: '请输入手机号', trigger: 'blur' }],
           password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-        }
+        },
+        deviceContent: [],
+        deviceDialogVisible: false,
       }
     },
     mounted: function() {
@@ -133,6 +163,22 @@
             return false;
           }
         });
+      },
+      toCheckDevice(data) {
+        const { id } = data;
+        let that = this;
+        that.deviceContent = [];
+        this.$ajax.get(process.env.VUE_APP_SERVER + '/business/admin/member/device-list/' + id).then((response)=>{
+          const { data } = response;
+          const { content } = data;
+          that.deviceContent = content;
+          this.deviceDialogVisible = true;
+        })
+      },
+      handleDelete(data) {
+        const { id } = data;
+        this.deviceContent = this.deviceContent.filter(item => item.id !== id)
+        this.$ajax.delete(process.env.VUE_APP_SERVER + '/business/admin/member/device-delete/' + id);
       }
     }
   }
