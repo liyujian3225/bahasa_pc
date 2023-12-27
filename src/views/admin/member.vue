@@ -9,26 +9,21 @@
     </p>
 
     <el-dialog
-      title="提示"
+      title="新增会员"
       :visible.sync="dialogVisible"
       width="30%">
 
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="用户名" prop="mobile">
+          <el-input v-model="form.mobile"></el-input>
+        </el-form-item>
         <el-form-item label="昵称" prop="name">
           <el-input v-model="form.name"></el-input>
-        </el-form-item>
-        <el-form-item label="手机号" prop="mobile">
-          <el-input v-model="form.mobile"></el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input v-model="form.password"></el-input>
         </el-form-item>
-        <el-form-item label="头像">
-          <el-input v-model="form.photo"></el-input>
-        </el-form-item>
       </el-form>
-
-
       <span slot="footer" class="dialog-footer">
         <el-button @click="onCancel">取 消</el-button>
         <el-button type="primary" @click="onSubmit">确 定</el-button>
@@ -109,8 +104,8 @@
           photo: "",
         },
         rules: {
+          mobile: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
           name: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-          mobile: [{ required: false, message: '请输入手机号', trigger: 'blur' }],
           password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
         },
         deviceContent: [],

@@ -1,18 +1,18 @@
 # 东东印尼语后台管理系统
 
-## 登录账号密码
+## 正式环境
 ```
-H5访问地址：http://www.bahasaindo.net
-后台访问地址：damin.bahasaindo.net
-后台登录账号：bahasaindo  Bahasa272727
+移动访问地址：http://www.bahasaindo.net/
+后台访问地址：http://damin.bahasaindo.net/#/login
 ```
 
-## 服务器部署环境
+## 测试环境
 ```
-用户名：root
-密码：Bahasa272727
-部署路径：/root/workspace/docker-compose/nginx/html
+移动访问地址：http://bahasaindo.com/
+后台访问地址：http://damin.bahasaindo.com/login
 ```
+
+
 
 
 [接口文档](https://apifox.com/apidoc/shared-a097a8db-0288-43b3-a971-66dd2bc52cc5)
