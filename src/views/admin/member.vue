@@ -36,7 +36,7 @@
       <thead>
       <tr>
         <th>id</th>
-        <th>手机号</th>
+        <th>用户名</th>
         <th>密码</th>
         <th>昵称</th>
         <th>头像url</th>
@@ -57,6 +57,11 @@
           <div class="hidden-sm hidden-xs btn-group">
             <button v-on:click="toCheckDevice(member)" class="btn btn-white btn-xs btn-info btn-round">
               查看设备
+            </button>&nbsp;
+          </div>
+          <div class="hidden-sm hidden-xs btn-group">
+            <button v-on:click="toDeleteUser(member)" class="btn btn-white btn-xs btn-info btn-round">
+              删除会员
             </button>&nbsp;
           </div>
         </td>
@@ -157,6 +162,28 @@
             console.log('error submit!!');
             return false;
           }
+        });
+      },
+      toDeleteUser(data) {
+        this.$confirm('确定删除该用户?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          const { id } = data;
+          this.$ajax.delete(process.env.VUE_APP_SERVER + '/business/admin/member/delete/' + id).then((response) => {
+            this.$refs.pagination.size = 15;
+            this.list(1);
+            this.$message({
+              type: 'success',
+              message: '删除成功!'
+            });
+          })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消删除'
+          });
         });
       },
       toCheckDevice(data) {
