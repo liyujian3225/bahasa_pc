@@ -1,11 +1,12 @@
 <template>
   <div>
     <p>
-      <button v-on:click="list(1)" class="btn btn-white btn-default btn-round">
-        <i class="ace-icon fa fa-refresh"></i>
-        刷新
+      <el-input style="width: 200px; margin-right: 10px;" v-model="mobile" placeholder="请输入内容"></el-input>
+      <button v-on:click="list(1)" class="btn btn-white btn-default btn-round" style="margin-right: 10px;">
+        检索
       </button>
-      <button class="btn btn-white btn-default btn-round" @click="addMember">新增会员</button>
+      <button class="btn btn-white btn-default btn-round" @click="addMember" style="margin-right: 10px;">新增会员</button>
+      <button class="btn btn-white btn-default btn-round" @click="exportMember">导出会员</button>
     </p>
 
     <el-dialog
@@ -30,8 +31,6 @@
       </span>
     </el-dialog>
 
-    <pagination ref="pagination" v-bind:list="list" v-bind:itemCount="8"></pagination>
-
     <table id="simple-table" class="table  table-bordered table-hover">
       <thead>
       <tr>
@@ -39,7 +38,8 @@
         <th>用户名</th>
         <th>密码</th>
         <th>昵称</th>
-        <th>头像url</th>
+        <th>角色</th>
+        <th>支付状态</th>
         <th>注册时间</th>
         <th>操作</th>
       </tr>
@@ -51,7 +51,8 @@
         <td>{{member.mobile}}</td>
         <td>{{member.password}}</td>
         <td>{{member.name}}</td>
-        <td>{{member.photo}}</td>
+        <td>{{member.role}}</td>
+        <td>{{member.payStatus}}</td>
         <td>{{member.registerTime}}</td>
         <td>
           <div class="hidden-sm hidden-xs btn-group">
@@ -68,6 +69,9 @@
       </tr>
       </tbody>
     </table>
+
+    <pagination ref="pagination" v-bind:list="list" v-bind:itemCount="8"></pagination>
+
     <el-dialog
       title="登录设备信息"
       :visible.sync="deviceDialogVisible"
@@ -99,6 +103,7 @@
     name: "business-member",
     data: function() {
       return {
+        mobile: '',
         member: {},
         members: [],
         dialogVisible: false,
@@ -135,12 +140,30 @@
         _this.$ajax.post(process.env.VUE_APP_SERVER + '/business/admin/member/list', {
           page: page,
           size: _this.$refs.pagination.size,
+          mobile: this.mobile,
         }).then((response)=>{
           Loading.hide();
           let resp = response.data;
           _this.members = resp.content.list;
           _this.$refs.pagination.render(page, resp.content.total);
 
+        })
+      },
+      exportMember() {
+        this.$ajax.post(process.env.VUE_APP_SERVER + '/business/admin/member/export', {}, {
+          headers: {
+            'Content-Type': 'application/json; application/octet-stream'
+          },
+          responseType: 'arraybuffer'
+        }).then((res)=>{
+          const aLink = document.createElement('a')
+          var blob = new Blob([res.data], { type: "application/vnd.ms-excel;charset=UTF-8" })
+          var fileName = "会员信息"
+          aLink.href = URL.createObjectURL(blob)
+          aLink.setAttribute('download', fileName) // 设置下载文件名称
+          document.body.appendChild(aLink)
+          aLink.click()
+          document.body.appendChild(aLink)
         })
       },
       addMember() {
