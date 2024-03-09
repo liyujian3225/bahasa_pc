@@ -6,7 +6,8 @@
         检索
       </button>
       <button class="btn btn-white btn-default btn-round" @click="addMember" style="margin-right: 10px;">新增会员</button>
-      <button class="btn btn-white btn-default btn-round" @click="exportMember">导出会员</button>
+      <button class="btn btn-white btn-default btn-round" @click="exportMember" style="margin-right: 10px;">导出会员</button>
+      <span>超级用户不受单点登录的限制、不受习题的限制</span>
     </p>
 
     <el-dialog
@@ -23,6 +24,18 @@
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input v-model="form.password"></el-input>
+        </el-form-item>
+        <el-form-item label="支付状态" prop="payStatus">
+          <el-radio-group v-model="form.payStatus">
+            <el-radio :label="0">未支付</el-radio>
+            <el-radio :label="1">已支付</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-radio-group v-model="form.role">
+            <el-radio :label="1">普通用户</el-radio>
+            <el-radio :label="2">超级用户</el-radio>
+          </el-radio-group>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
@@ -51,8 +64,8 @@
         <td>{{member.mobile}}</td>
         <td>{{member.password}}</td>
         <td>{{member.name}}</td>
-        <td>{{member.role}}</td>
-        <td>{{member.payStatus}}</td>
+        <td>{{member.role === 1 ? '普通用户' : '超级用户'}}</td>
+        <td>{{member.payStatus && member.payStatus === 1 ? "已支付" : "未支付"}}</td>
         <td>{{member.registerTime}}</td>
         <td>
           <div class="hidden-sm hidden-xs btn-group">
@@ -62,7 +75,12 @@
           </div>
           <div class="hidden-sm hidden-xs btn-group">
             <button v-on:click="toDeleteUser(member)" class="btn btn-white btn-xs btn-info btn-round">
-              删除会员
+              删除
+            </button>&nbsp;
+          </div>
+          <div class="hidden-sm hidden-xs btn-group">
+            <button v-on:click="toEditUser(member)" class="btn btn-white btn-xs btn-info btn-round">
+              编辑
             </button>&nbsp;
           </div>
         </td>
@@ -75,7 +93,7 @@
     <el-dialog
       title="登录设备信息"
       :visible.sync="deviceDialogVisible"
-      width="45%">
+      width="800px">
       <el-table :data="deviceContent" style="width: 100%">
         <el-table-column prop="id" label="ID"></el-table-column>
         <el-table-column prop="memberId" label="会员ID"></el-table-column>
@@ -103,15 +121,18 @@
     name: "business-member",
     data: function() {
       return {
-        mobile: '',
+        mobile: '',  //用户查询
         member: {},
-        members: [],
+        members: [], //列表tableData
         dialogVisible: false,
         form: {
-          name: "",
-          mobile: "",
-          password: "",
+          id: "",
+          mobile: "",   //用户名
+          name: "",     //昵称
+          password: "", //密码
           photo: "",
+          payStatus: 0,  //支付状态
+          role: 1,       //角色
         },
         rules: {
           mobile: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -167,6 +188,15 @@
         })
       },
       addMember() {
+        this.form = {
+          id: "",
+          mobile: "",   //用户名
+          name: "",     //昵称
+          password: "", //密码
+          photo: "",
+          payStatus: 0,  //支付状态
+          role: 1,       //角色
+        }
         this.dialogVisible = true
       },
       onCancel() {
@@ -178,14 +208,31 @@
           if (valid) {
             const params = this.form;
             this.$ajax.post(process.env.VUE_APP_SERVER + '/business/admin/member/save', params).then((response)=>{
-              this.list(1);
-              this.onCancel();
+              const {success, message} = response.data;
+              if(success) {
+                this.list(1);
+                this.onCancel();
+                this.$message({
+                  type: 'success',
+                  message: '新增成功'
+                });
+              }else {
+                this.$message({
+                  type: 'error',
+                  message: message
+                });
+              }
             })
           } else {
             console.log('error submit!!');
             return false;
           }
         });
+      },
+      toEditUser(data) {
+        const {mobile, name, password, photo, payStatus, role, id} = data;
+        this.form = {mobile, name, password, photo, payStatus, role, id};
+        this.dialogVisible = true;
       },
       toDeleteUser(data) {
         this.$confirm('确定删除该用户?', '提示', {
