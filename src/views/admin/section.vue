@@ -24,34 +24,37 @@
     <table id="simple-table" class="table  table-bordered table-hover">
       <thead>
       <tr>
+        <th>序号</th>
         <th>ID</th>
         <th>标题</th>
         <th>VOD</th>
         <th>时长</th>
         <th>收费</th>
-        <th>顺序</th>
         <th>操作</th>
       </tr>
       </thead>
 
       <tbody>
       <tr v-for="section in sections">
+        <td>{{section.sort}}</td>
         <td>{{section.id}}</td>
         <td>{{section.title}}</td>
         <td>{{section.vod}}</td>
         <td>{{section.time | formatSecond}}</td>
         <td>{{SECTION_CHARGE | optionKV(section.charge)}}</td>
-        <td>{{section.sort}}</td>
       <td>
         <div class="hidden-sm hidden-xs btn-group">
+          <button v-on:click="getCourse(section)" class="btn btn-xs btn-info">
+            习题
+          </button>
           <button v-on:click="play(section)" class="btn btn-xs btn-info">
-            <i class="ace-icon fa fa-video-camera bigger-120"></i>
+            观看
           </button>
           <button v-on:click="edit(section)" class="btn btn-xs btn-info">
-            <i class="ace-icon fa fa-pencil bigger-120"></i>
+            编辑
           </button>
           <button v-on:click="del(section.id)" class="btn btn-xs btn-danger">
-            <i class="ace-icon fa fa-trash-o bigger-120"></i>
+            删除
           </button>
         </div>
       </td>
@@ -180,6 +183,80 @@
     </div><!-- /.modal -->
 
     <modal-player ref="modalPlayer"></modal-player>
+
+    <el-dialog
+      :title=courseDialogTitle
+      :visible.sync="courseDialogVisible"
+      width="800px">
+      <el-form
+        :class="['courseItem', {attention: attentionArea.includes(index)}]"
+        label-width="80px"
+        v-for="(item, index) in courseForm"
+        :key="index"
+        :ref="`courseForm${index}`"
+        :model="courseForm[index]"
+        :rules="courseRules"
+        >
+        <span class="attention" v-if="attentionArea.includes(index)">正确答案有且只有一个</span>
+        <el-row :gutter="10">
+          <el-col :span="24">
+            <el-form-item :label="`题目${index + 1}`" prop="content">
+              <el-col :span="20">
+                <el-input
+                  placeholder="请输入题目"
+                  size="mini"
+                  v-model="courseForm[index].content">
+                </el-input>
+              </el-col>
+              <el-col :span="4">
+                <el-button
+                  @click="addCourse"
+                  size="mini"
+                  type="primary"
+                  icon="el-icon-circle-plus-outline">
+                </el-button>
+                <el-button
+                  @click="deleteCourse(index)"
+                  v-if="courseForm.length > 1"
+                  size="mini"
+                  type="danger"
+                  icon="el-icon-remove-outline">
+                </el-button>
+              </el-col>
+            </el-form-item>
+          </el-col>
+          <el-col
+            :span="12"
+            v-for="(item_, index_) in courseForm[index].questionOptions"
+            :key="index_" >
+            <el-form-item
+              :label="`答案${orderOption[index_]}`"
+              :prop="'questionOptions.' + index_ + '.content'">
+              <el-col :span="18">
+                <el-input
+                  placeholder="请输入选项"
+                  size="mini"
+                  v-model="courseForm[index].questionOptions[index_].content">
+                </el-input>
+              </el-col>
+              <el-col :span="6">
+                <el-select
+                  size="mini"
+                  v-model="courseForm[index].questionOptions[index_].answer"
+                  @change="handleChangeAnswer">
+                  <el-option label="答案" :value="1"></el-option>
+                  <el-option label="选项" :value="0"></el-option>
+                </el-select>
+              </el-col>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="courseDialogVisible = false;">取 消</el-button>
+        <el-button type="primary" @click="saveCourse">保 存</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -208,7 +285,68 @@ export default {
         data: {
           use: FILE_USE.COURSE.key,
           key: "",
-        }
+        },
+        courseId: "",
+        courseDialogVisible: false,
+        courseDialogTitle: "",
+        courseFormItem: {
+          content: "",
+          questionOptions: [
+            {
+              content: "",
+              answer: 0,
+            },
+            {
+              content: "",
+              answer: 0,
+            },
+            {
+              content: "",
+              answer: 0,
+            },
+            {
+              content: "",
+              answer: 0,
+            }
+          ]
+        },
+        courseForm: [
+          {
+            content: "",
+            questionOptions: [
+              {
+                content: "",
+                answer: 0,
+              },
+              {
+                content: "",
+                answer: 0,
+              },
+              {
+                content: "",
+                answer: 0,
+              },
+              {
+                content: "",
+                answer: 0,
+              }
+            ]
+          }
+        ],
+        courseRules: {
+          content: [{ required: true, message: '请输入题目', trigger: 'blur' }],
+          "questionOptions.0.content": [{ required: true, message: '请输入选项', trigger: 'blur' }],
+          "questionOptions.1.content": [{ required: true, message: '请输入选项', trigger: 'blur' }],
+          "questionOptions.2.content": [{ required: true, message: '请输入选项', trigger: 'blur' }],
+          "questionOptions.3.content": [{ required: true, message: '请输入选项', trigger: 'blur' }],
+        },
+        orderOption: {
+          "0": "A",
+          "1": "B",
+          "2": "C",
+          "3": "D",
+        },
+        attentionArea: []
       }
     },
     mounted: function() {
@@ -353,6 +491,79 @@ export default {
       play(section) {
         let _this = this;
         _this.$refs.modalPlayer.playVod(section.vod);
+      },
+
+      addCourse() {
+        this.attentionArea = []
+        this.courseForm.push(JSON.parse(JSON.stringify(this.courseFormItem)))
+      },
+
+      deleteCourse(index) {
+        this.attentionArea = []
+        this.courseForm.splice(index, 1)
+      },
+
+      handleChangeAnswer() {
+        this.attentionArea = []
+      },
+
+      resetFields() {
+        //重置校验表单
+        const len = this.courseForm.length;
+        for(let i = 0; i < len; i++) {
+          this.$refs[`courseForm${i}`][0].resetFields()
+        }
+      },
+
+      getCourse({id, title}) {
+        this.courseId = id;
+        this.$ajax.get(process.env.VUE_APP_SERVER + '/business/admin/section/exam/list?sectionId=' + id).then((response)=>{
+          const { content } = response.data;
+          if(content.length) {
+            this.courseForm = content;
+          }else {
+            this.courseForm = [ JSON.parse(JSON.stringify(this.courseFormItem)) ]
+          }
+          this.courseDialogVisible = true;
+          this.courseDialogTitle = `${title}`;
+          this.resetFields();
+        })
+      },
+
+      async saveCourse() {
+        const len = this.courseForm.length;
+        let refEle = [];
+        for(let i = 0; i < len; i++) {
+          refEle.push(this.$refs[`courseForm${i}`][0].validate())
+        }
+        let p = Promise.all(refEle);
+        p.then(arr => {
+          //判断是否设置了正确答案
+          this.courseForm.forEach((item, index) => {
+            const { questionOptions } = item;
+            const rightAnswer = questionOptions.filter(item => {
+              return item.answer === 1;
+            })
+            const hasRightAnswer = rightAnswer.length === 1;
+            if(!hasRightAnswer) {
+              this.attentionArea.push(index)
+            }
+          })
+          if(!this.attentionArea.length) {
+            const params = {
+              sectionId: this.courseId,
+              questions: this.courseForm
+            }
+            this.$ajax.post(process.env.VUE_APP_SERVER + '/business/admin/section/exam/save', params).then((response)=>{
+              this.courseDialogVisible = false;
+              this.resetFields();
+              this.$message({
+                type: 'success',
+                message: '编辑成功'
+              });
+            })
+          }
+        })
       }
     }
   }
@@ -366,5 +577,24 @@ export default {
   }
   ::v-deep .el-upload__input {
     display: none !important;
+  }
+  .courseItem {
+    background: #e9f3ff;
+    border: 1px solid #e9f3ff;
+    padding: 10px 0;
+    border-radius: 4px;
+    position: relative;
+    &:not(:last-child) {
+      margin-bottom: 20px;
+    }
+    &.attention {
+      border: 1px solid #ff0000;
+    }
+    span.attention {
+      color: #ff0000;
+      position: absolute;
+      right: 0;
+      bottom: -20px;
+    }
   }
 </style>

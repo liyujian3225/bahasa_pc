@@ -11,31 +11,43 @@
     </p>
 
     <el-dialog
-      title="新增会员"
+      :title="dialogTitle"
       :visible.sync="dialogVisible"
       width="30%">
-
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="用户名" prop="mobile">
-          <el-input v-model="form.mobile"></el-input>
+          <el-input v-model="form.mobile" size="small"></el-input>
         </el-form-item>
         <el-form-item label="昵称" prop="name">
-          <el-input v-model="form.name"></el-input>
+          <el-input v-model="form.name" size="small"></el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input v-model="form.password"></el-input>
+          <el-input v-model="form.password" size="small"></el-input>
         </el-form-item>
-        <el-form-item label="支付状态" prop="payStatus">
-          <el-radio-group v-model="form.payStatus">
+        <el-form-item label="角色" prop="role">
+          <el-radio-group v-model="form.role" size="small">
+            <el-radio :label="1">普通用户</el-radio>
+            <el-radio :label="2">超级用户</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="是否支付" prop="payStatus">
+          <el-radio-group v-model="form.payStatus" size="mini">
             <el-radio :label="0">未支付</el-radio>
             <el-radio :label="1">已支付</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="角色" prop="role">
-          <el-radio-group v-model="form.role">
-            <el-radio :label="1">普通用户</el-radio>
-            <el-radio :label="2">超级用户</el-radio>
+        <el-form-item label="是否答题" prop="doQuestion">
+          <el-radio-group v-model="form.doQuestion" size="mini">
+            <el-radio :label="0">关闭</el-radio>
+            <el-radio :label="1">开启</el-radio>
           </el-radio-group>
+        </el-form-item>
+        <el-form-item label="设备限制数量" prop="deviceLimitNum">
+          <el-input-number
+            size="small"
+            v-model="form.deviceLimitNum"
+            :min="1" :max="10"
+          ></el-input-number>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
@@ -49,10 +61,11 @@
       <tr>
         <th>id</th>
         <th>用户名</th>
-        <th>密码</th>
         <th>昵称</th>
         <th>角色</th>
         <th>支付状态</th>
+        <th>是否需要答题</th>
+        <th>设备限制</th>
         <th>注册时间</th>
         <th>操作</th>
       </tr>
@@ -62,10 +75,13 @@
       <tr v-for="member in members">
         <td>{{member.id}}</td>
         <td>{{member.mobile}}</td>
-        <td>{{member.password}}</td>
         <td>{{member.name}}</td>
         <td>{{member.role === 1 ? '普通用户' : '超级用户'}}</td>
         <td>{{member.payStatus && member.payStatus === 1 ? "已支付" : "未支付"}}</td>
+        <td>
+          <el-tag size="mini" :type="member.doQuestion === 1 ? 'unset' : 'info'">{{member.doQuestion === 1 ? '是' : '否'}}</el-tag>
+        </td>
+        <td>{{member.deviceLimitNum}}</td>
         <td>{{member.registerTime}}</td>
         <td>
           <div class="hidden-sm hidden-xs btn-group">
@@ -99,6 +115,11 @@
         <el-table-column prop="memberId" label="会员ID"></el-table-column>
         <el-table-column prop="deviceId" label="设备ID" width="300"></el-table-column>
         <el-table-column prop="loginTime" label="首次登陆时间" width="160"></el-table-column>
+        <el-table-column label="设备系统" width="160">
+          <template slot-scope="scope">
+            <span>{{ deviceTypeOption[scope.row.deviceType] }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="100">
           <template slot-scope="scope">
             <el-button @click="handleDelete(scope.row)" type="text" size="small">删除</el-button>
@@ -125,14 +146,16 @@
         member: {},
         members: [], //列表tableData
         dialogVisible: false,
+        dialogTitle: "",
         form: {
           id: "",
-          mobile: "",   //用户名
-          name: "",     //昵称
-          password: "", //密码
-          photo: "",
-          payStatus: 0,  //支付状态
-          role: 1,       //角色
+          mobile: "",        //用户名
+          name: "",          //昵称
+          password: "",      //密码
+          role: 1,           //角色
+          payStatus: 0,      //支付状态
+          doQuestion: 1,     //是否需要答题
+          deviceLimitNum: 2  //设备限制数量
         },
         rules: {
           mobile: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -140,6 +163,11 @@
           password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
         },
         deviceContent: [],
+        deviceTypeOption: {
+          "1": 'android',
+          "2": 'ios',
+          "3": 'windows',
+        },
         deviceDialogVisible: false,
       }
     },
@@ -193,11 +221,13 @@
           mobile: "",   //用户名
           name: "",     //昵称
           password: "", //密码
-          photo: "",
-          payStatus: 0,  //支付状态
           role: 1,       //角色
+          payStatus: 0,  //支付状态
+          doQuestion: 1,     //是否需要答题
+          deviceLimitNum: 2  //设备限制数量
         }
         this.dialogVisible = true
+        this.dialogTitle = "新增会员"
       },
       onCancel() {
         this.dialogVisible = false;
@@ -230,9 +260,10 @@
         });
       },
       toEditUser(data) {
-        const {mobile, name, password, photo, payStatus, role, id} = data;
-        this.form = {mobile, name, password, photo, payStatus, role, id};
+        const {id, mobile, name, password, role, payStatus, doQuestion, deviceLimitNum } = data;
+        this.form = {id, mobile, name, password, role, payStatus, doQuestion, deviceLimitNum };
         this.dialogVisible = true;
+        this.dialogTitle = "编辑会员"
       },
       toDeleteUser(data) {
         this.$confirm('确定删除该用户?', '提示', {
@@ -258,12 +289,11 @@
       },
       toCheckDevice(data) {
         const { id } = data;
-        let that = this;
-        that.deviceContent = [];
+        this.deviceContent = [];
         this.$ajax.get(process.env.VUE_APP_SERVER + '/business/admin/member/device-list/' + id).then((response)=>{
           const { data } = response;
           const { content } = data;
-          that.deviceContent = content;
+          this.deviceContent = content;
           this.deviceDialogVisible = true;
         })
       },
